@@ -12,9 +12,11 @@
 
 #include "T49Run.h"
 #include "T49EventRoot.h"
+#include "T49EventMCRoot.h"
 #include "T49VetoRoot.h"
 #include "T49VertexRoot.h"
 #include "T49ParticleRoot.h"
+#include "T49ParticleMCRoot.h"
 #include "T49Vertex.h"
 #include "T49Ring.h"
 
@@ -26,50 +28,57 @@ using namespace std;
 //string input_path = "/afs/cern.ch/work/o/ogolosov/public/NA49/DST";
 //string input_path = "/eos/user/o/ogolosov/NA49_data/DST";
 //string output_path = "/afs/cern.ch/work/o/ogolosov/public/NA49/DT";
-string input_path = "/home/ogolosov/Desktop/Analysis/NA49/DST";
-string output_path = "/home/ogolosov/Desktop/Analysis/NA49/DT";
+string input_path = "/home/ogolosov/Desktop/Analysis/NA49_data/DST";
+string output_path = "/home/ogolosov/Desktop/Analysis/NA49_data/DT";
 
-int T49_to_DT(string productionTag, int maxFileNumber = 10000)
+bool isSim = false;
+T49Run *run;
+TTree *tree;
+DataTreeEvent *fDTEvent;
+TTree *myTree;
+T49EventRoot *event;
+T49ParticleRoot *particle;
+T49RingRoot *ring;
+T49VertexRoot *vertex;
+T49VetoRoot *veto;
+TObjArray *particles;
+TLorentzVector TrackPar;
+T49EventMCRoot *MCevent;
+T49ParticleMCRoot *MCparticle;
+TObjArray *MCparticles;
+
+void ReadEvent ();
+void ReadMCEvent ();
+int T49_to_DT(string productionTag, int maxFileNumber = 10000);
+
+int T49_to_DT(string productionTag, int maxFileNumber)
 {
-  TStopwatch timer;
-  timer.Reset();
-  timer.Start();
-
-  string runType;
   if (prodMap.count(productionTag) == 0)
     {
     cout << "There is no such production tag as " << productionTag << endl;
-    return 0;
+//    return 0;
     }
 
+  string runType = prodMap [productionTag];
   input_path = input_path + "/" + productionTag;
-  output_path = output_path + "/" + productionTag;
+  output_path = output_path + "/" + runType;
   string command = "mkdir -p " + output_path;
   gSystem -> Exec (command.c_str ());
   cout << "input path: " << input_path << endl;
   cout << "output path: " << output_path << endl;
 
-  runType = prodMap [productionTag];
   cout << runType << endl;
 
   string inputFileList = input_path + "/list.txt";
 
-  TTree* myTree  = new TTree("DataTree", "NA49 Pb-Pb DataTree");
-  DataTreeEvent *fDTEvent = new DataTreeEvent();
+  myTree = new TTree("DataTree", "NA49 Pb-Pb DataTree");
+  fDTEvent = new DataTreeEvent();
   myTree -> Branch("DTEvent", "DataTree", fDTEvent);
 
-  T49Run *run = new T49Run();
+  run = new T49Run();
   run->SetVerbose(0);
 
-  T49EventRoot *event;
-  T49ParticleRoot *particle;
-  T49RingRoot *ring;
-  T49VertexRoot *vertex;
-  T49VetoRoot *veto;
-  TObjArray *particles;
-  bool runNumberIsSet = false;
   int fileNumber = 0;
-  int nEvent = 0;
 
   ifstream inputFileListStream (inputFileList);
   if (!inputFileListStream) cout << "list.txt not found!\n";
@@ -81,44 +90,99 @@ int T49_to_DT(string productionTag, int maxFileNumber = 10000)
   	inputFileName = input_path + "/" + inputFileName;
 
     TFile* outputFile = new TFile((Char_t*) outputFileName.c_str(),"recreate");
-    TTree* tree = myTree->CloneTree();
+    tree = myTree->CloneTree();
     fileNumber++;
     cout << "Opening file " << fileNumber << ": " << inputFileName.c_str() << endl;
-    if(!run -> Open((Char_t*) (inputFileName).c_str())) continue;
-    runNumberIsSet = false;
-    while( event = (T49EventRoot*)run -> GetNextEvent() )
+    if(!run -> Open ((Char_t*) (inputFileName).c_str())) continue;
+    if (runType.find ("VENUS") != string::npos)
     {
-        if (runNumberIsSet==false)
-        {
-          if (runType.find ("40") != string::npos)
-          {
-              cout << "Veto calibration for 40A GeV\n";
-              run->SetEvetoCal(1);
-          }
-          else
-          {
-              cout << "Veto calibration for 160A GeV\n";
-              run->SetEvetoCal(2);
-          }
-          run->SetRunType((Char_t*)(runType.c_str ()));
-          run->SetRunNumber(event->GetNRun());
-          run->CheckEvetoCal();
-          runNumberIsSet = true;
-          cout << "Run number: " << run->GetRunNumber() << endl;
-          cout << "Centrality of first event: " << event->GetCentrality() << endl << endl;
-        }
+        isSim = true;
+        cout << "isSim = true!!!\n";
+    }
 
-        cout << "\rEvent " << nEvent++;
+    if (runType.find ("40") != string::npos)
+    {
+        cout << "Veto calibration for 40A GeV\n";
+        run->SetEvetoCal (3); // set 1 for other energies?, 0 for no time-dependent calibration
+    }
+    else if (runType.find ("160") != string::npos)
+    {
+        cout << "Veto calibration for 160A GeV\n"; // set 1 for other energies?, 0 for no time-dependent calibration
+        run->SetEvetoCal (2);
+    }
+    else
+    {
+        cout << "Veto calibration for energies other than 40A and 160A GeV\n"; // set 1 for other energies?, 0 for no time-dependent calibration
+        run->SetEvetoCal (1);
+    }
 
-        fDTEvent -> ClearEvent();
+    run -> SetRunType ((Char_t*) (runType.c_str ()));
+    event = (T49EventRoot*) run -> GetNextEvent ();
+    run -> SetRunNumber (event -> GetNRun ());
+    run -> CheckEvetoCal ();
+    cout << "Run number: " << run -> GetRunNumber () << endl;
+    cout << "Centrality of first event: " << event -> GetCentrality () << endl << endl;
 
-        fDTEvent -> SetRunId( event->GetNRun() );
-        fDTEvent -> SetEventId( event->GetNEvent() );
+    int nEvents = run -> GetMaxEvents();
+    for (int nEvent = 0; nEvent < nEvents; nEvent++)
+    {
+        cout << "\rEvent " << nEvent;
+        fDTEvent -> ClearEvent ();
+        ReadEvent ();
+        if (isSim) ReadMCEvent ();
+        tree -> Fill ();
+        run -> GetNextEvent ();
+    }
+    outputFile -> cd ();
+  	tree -> Write ();
+ 	outputFile -> Close ();
+    run -> Close ();
+    cout << endl;
+  }
 
-        vertex = ((T49VertexRoot*)event -> GetPrimaryVertex());
+  return 1;
+}
 
-        fDTEvent -> SetVertexPosition(event->GetVertexX(), event->GetVertexY(), event->GetVertexZ(), EnumVertexType::kReconstructedVertex);
-        fDTEvent -> SetVertexQuality( vertex->GetPchi2() );
+int main(int argc, char *argv[])
+{
+  TStopwatch timer;
+  timer.Reset();
+  timer.Start();
+
+  switch (argc)
+  {
+    case 2:
+    return T49_to_DT(argv[1]);
+    break;
+    case 3:
+    return T49_to_DT(argv[1], atoi(argv[2]));
+    break;
+    default:
+    cout << "Specify input filelist!" << endl;
+    cout<<argv[0]<<"  PRODUCTION_TAG  [N_FILES]"<<endl << endl;
+    return 0;
+  }
+
+  timer.Stop();
+  printf("Real time: %f\n",timer.RealTime());
+  printf("CPU time: %f\n",timer.CpuTime());
+  return 1;
+}
+
+void ReadEvent ()
+{
+    event = (T49EventRoot*) run -> GetEvent ();
+
+    fDTEvent -> SetRunId( event->GetNRun() );
+    fDTEvent -> SetEventId( event->GetNEvent() );
+    fDTEvent -> SetVertexPosition(event->GetVertexX(), event->GetVertexY(), event->GetVertexZ(), EnumVertexType::kReconstructedVertex);
+
+    vertex = ((T49VertexRoot*)event -> GetPrimaryVertex());
+    fDTEvent -> SetVertexQuality( vertex->GetPchi2() );
+    fDTEvent -> SetPsdPosition(0., 0., 0.);
+    fDTEvent -> SetPsdEnergy(event->GetTDCalEveto());
+    fDTEvent -> SetRPAngle ( event->GetEveto() );
+    fDTEvent -> SetImpactParameter ( event->GetCentrality () );
 
 //      fTriggerMask =(event->GetTriggerMask()); // Trigger Mask
 //      fDate=(event->GetDate()); // Event date
@@ -128,8 +192,6 @@ int T49_to_DT(string productionTag, int maxFileNumber = 10000)
 //      fWfaBeamTime=(event->GetWfaBeamTime() ); // returns the array containing the times in nanoseconds for all beam particles in the ±25µs around the interaction time. The length of this array is given by the method above
 //      fWfaInterTime=(event->GetWfaInterTime()); //returns the array containing the times in nanoseconds for all interacting particles in the ±25µs around the interaction time. The length of this array is given by the method above
 
-        fDTEvent->SetPsdPosition(0., 0., 0.);
-        fDTEvent->SetPsdEnergy(event->GetEveto());
 
     veto = (T49VetoRoot*)event->GetVeto();
     for (unsigned int iVeto=0; iVeto<4; ++iVeto)
@@ -152,14 +214,11 @@ int T49_to_DT(string productionTag, int maxFileNumber = 10000)
         fDTEvent -> GetLastPSDModule() -> SetEnergy(ring->GetADChadron(iRing));
     }
 
-      int iTrack=0;
-      particles = (TObjArray*)event -> GetPrimaryParticles();
-      TIter particles_iter(particles);
+    particles = (TObjArray*)event -> GetPrimaryParticles();
+    TIter particles_iter(particles);
 
-      TLorentzVector TrackPar;
-
-      while( particle = (T49ParticleRoot*) particles_iter.Next())
-      {
+    for (int iTrack=0; particle = (T49ParticleRoot*) particles_iter.Next(); iTrack++)
+    {
         fDTEvent -> AddTrack();
         fDTEvent -> GetLastTrack() -> SetId(iTrack);
         TrackPar.SetPtEtaPhiM (particle->GetPt(), particle->GetEta(), particle->GetPhi(), 0.14);
@@ -227,38 +286,43 @@ int T49_to_DT(string productionTag, int maxFileNumber = 10000)
           fPrimaryParticles_fSigPx[k]=(particle->GetSigPx());
           fPrimaryParticles_fSigPy[k]=(particle->GetSigPy());
           */
-          iTrack++;
-        }
-        tree -> Fill();
     }
-
-    outputFile->cd();
-  	tree ->Write();
- 	outputFile->Close();
-    run -> Close();
-     cout << endl;
-  }
-
-  timer.Stop();
-  printf("Real time: %f\n",timer.RealTime());
-  printf("CPU time: %f\n",timer.CpuTime());
-  return 1;
 }
 
-int main(int argc, char *argv[])
+void ReadMCEvent ()
 {
-  switch (argc)
-  {
-    case 2:
-    return T49_to_DT(argv[1]);
-    break;
-    case 3:
-    return T49_to_DT(argv[1], atoi(argv[2]));
-    break;
-    default:
-    cout << "Specify input filelist!" << endl;
-    cout<<argv[0]<<"  PRODUCTION_TAG  [N_FILES]"<<endl << endl;
-    return 0;
-  }
-  return 1;
+    MCevent = (T49EventMCRoot*) run -> GetEvent ();
+    fDTEvent -> SetMCVertexPosition (MCevent->GetVertexX(), MCevent->GetVertexY(), MCevent->GetVertexZ());
+
+    MCparticles = (TObjArray*) MCevent -> GetMCParticles();
+    TIter MCparticles_iter (MCparticles);
+    int priMatchedTrackIndex;
+    int nPriMatchedTracks;
+    int nPriMatchPoints;
+    int nPoints;
+
+    for (int iTrack=0; MCparticle = (T49ParticleMCRoot*) MCparticles_iter.Next(); iTrack++)
+    {
+        if (MCparticle -> GetStartVertex() != 0) continue;
+        fDTEvent -> AddMCTrack();
+        TrackPar.SetXYZM (MCparticle -> GetPx(), MCparticle -> GetPy(), MCparticle -> GetPz(), MCparticle -> GetMass());
+        fDTEvent -> GetLastMCTrack() -> SetMomentum(TrackPar);
+        fDTEvent -> GetLastMCTrack() -> SetCharge(MCparticle->GetCharge());
+        fDTEvent -> GetLastMCTrack() -> SetPdgId(MCparticle -> GetPid());
+        fDTEvent -> GetLastMCTrack() -> SetNumberOfHits(MCparticle->GetNPoint(0), EnumTPC::kVTPC1);
+        fDTEvent -> GetLastMCTrack() -> SetNumberOfHits(MCparticle->GetNPoint(1), EnumTPC::kVTPC2);
+        fDTEvent -> GetLastMCTrack() -> SetNumberOfHits(MCparticle->GetNPoint(2), EnumTPC::kMTPC);
+        fDTEvent -> GetLastMCTrack() -> SetNumberOfHits(MCparticle->GetNPoint(), EnumTPC::kTPCAll);
+
+        nPriMatchedTracks = MCparticle -> GetNPriMatched ();
+        for (int iMatch = 0; iMatch < nPriMatchedTracks; iMatch++)
+        {
+            priMatchedTrackIndex = MCparticle -> GetPriMatched (iMatch);
+            nPriMatchPoints = MCparticle -> GetNPriMatchPoint (iMatch);
+            nPoints = MCparticle -> GetNPoint ();
+            if ((double) nPriMatchPoints / nPoints > 0.3 );
+                fDTEvent -> GetLastMCTrack() -> AddRecoTrackId (priMatchedTrackIndex);
+        }
+    }
 }
+
