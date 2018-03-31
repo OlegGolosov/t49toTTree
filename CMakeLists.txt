@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 2.4 FATAL_ERROR)
 project(T49_TO_DT)
 
 set(CMAKE_BUILD_TYPE debug)
+
+#set(NA49 /afs/cern.ch/work/o/ogolosov/public/NA49/ROOT_NA49)
+#set(DATATREE /afs/cern.ch/work/o/ogolosov/public/DataTree)
+
 set(NA49 /home/ogolosov/Desktop/Analysis/ROOT_NA49)
 set(DATATREE /home/ogolosov/Desktop/Analysis/DataTree)
 
@@ -16,11 +20,11 @@ include_directories(
     ${CMAKE_SOURCE_DIR}
     ${ROOT_INCLUDE_DIRS}
     ${NA49}/T49DST/inc
-    ${DATATREE}/include
+    ${DATATREE}/src
     )
 add_definitions(${ROOT_CXX_FLAGS})
 
-add_executable(T49_to_DT productionMap.h T49_to_DT.cxx)
+add_executable(T49_to_DT productionMap.h particleCodes.h T49_to_DT.cxx)
 target_link_libraries(T49_to_DT
     ${ROOT_LIBRARIES}
     ${DATATREE}/build/libDataTree.so

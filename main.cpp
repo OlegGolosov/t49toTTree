@@ -15,6 +15,7 @@
 #include "T49EventMCRoot.h"
 #include "T49VetoRoot.h"
 #include "T49VertexRoot.h"
+#include "T49VertexMCRoot.h"
 #include "T49ParticleRoot.h"
 #include "T49ParticleMCRoot.h"
 #include "T49Vertex.h"
@@ -41,6 +42,7 @@ T49EventRoot *event;
 T49ParticleRoot *particle;
 T49RingRoot *ring;
 T49VertexRoot *vertex;
+T49VertexMCRoot *MCvertex;
 T49VetoRoot *veto;
 TObjArray *particles;
 TLorentzVector TrackPar;
@@ -150,6 +152,9 @@ int main(int argc, char *argv[])
   timer.Reset();
   timer.Start();
 
+//  argc = 2;
+//  argv [1] = "VENUS_40AGEV";
+
   switch (argc)
   {
     case 2:
@@ -182,7 +187,7 @@ void ReadEvent ()
     fDTEvent -> SetVertexQuality( vertex->GetPchi2() );
     fDTEvent -> SetPsdPosition(0., 0., 0.);
     fDTEvent -> SetPsdEnergy(event -> GetTDCalEveto());
-    fDTEvent -> SetRPAngle ( event -> GetCentralityClass2 () );
+    fDTEvent -> SetRPAngle ( event -> GetCentralityClass () );
     fDTEvent -> SetImpactParameter ( event -> GetCentrality () );
 
 //      fTriggerMask =(event->GetTriggerMask()); // Trigger Mask
@@ -231,9 +236,8 @@ void ReadEvent ()
         fDTEvent -> GetPSDModule (PSDModuleId) -> SetEnergy (ring->GetADChadron (iRing));
     }
 
-    particles = (TObjArray*)event -> GetPrimaryParticles();
+    particles = (TObjArray*) event -> GetPrimaryParticles();
     TIter particles_iter(particles);
-
     for (int iTrack=0; particle = (T49ParticleRoot*) particles_iter.Next(); iTrack++)
     {
         fDTEvent -> AddVertexTrack();
@@ -304,7 +308,9 @@ void ReadEvent ()
 void ReadMCEvent ()
 {
     MCevent = (T49EventMCRoot*) run -> GetEvent ();
-    fDTEvent -> SetMCVertexPosition (MCevent->GetVertexX(), MCevent->GetVertexY(), MCevent->GetVertexZ());
+    MCvertex = (T49VertexMCRoot*) (MCevent -> GetVertices () -> At (0));
+    fDTEvent -> SetMCVertexPosition (MCvertex->GetX(), MCvertex->GetY(), MCvertex->GetZ());
+    fDTEvent -> SetPsdEnergy(999);
 
     MCparticles = (TObjArray*) MCevent -> GetMCParticles();
     TIter MCparticles_iter (MCparticles);
@@ -312,6 +318,7 @@ void ReadMCEvent ()
     int nPriMatchedTracks;
     int nPriMatchPoints;
     int nPoints;
+    double trackPurity;
 
     for (int iTrack=0; MCparticle = (T49ParticleMCRoot*) MCparticles_iter.Next(); iTrack++)
     {
@@ -326,14 +333,15 @@ void ReadMCEvent ()
         fDTEvent -> GetLastMCTrack() -> SetNumberOfHits(MCparticle->GetNPoint(2), EnumTPC::kMTPC);
         fDTEvent -> GetLastMCTrack() -> SetNumberOfHits(MCparticle->GetNPoint(), EnumTPC::kTPCAll);
 
+        int nPriPart = particles->GetSize();
         nPriMatchedTracks = MCparticle -> GetNPriMatched ();
         for (int iMatch = 0; iMatch < nPriMatchedTracks; iMatch++)
         {
             priMatchedTrackIndex = MCparticle -> GetPriMatched (iMatch);
             nPriMatchPoints = MCparticle -> GetNPriMatchPoint (iMatch);
             nPoints = MCparticle -> GetNPoint ();
-//            if ((double) nPriMatchPoints / nPoints > 0.3 );
-//                fDTEvent -> GetLastMCTrack() -> AddTrackMatch (priMatchedTrackIndex, nPriMatchPoints, );
+            trackPurity = (double) nPriMatchPoints / nPoints;
+            fDTEvent -> AddTrackMatch (fDTEvent -> GetVertexTrack(priMatchedTrackIndex), fDTEvent -> GetLastMCTrack(), nPriMatchPoints, trackPurity);
         }
     }
 }
