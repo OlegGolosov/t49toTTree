@@ -22,6 +22,7 @@
 
 #include "DataTreeEvent.h"
 #include "productionMap.h"
+#include "particleCodes.h"
 
 using namespace std;
 
@@ -180,9 +181,9 @@ void ReadEvent ()
     vertex = ((T49VertexRoot*)event -> GetPrimaryVertex());
     fDTEvent -> SetVertexQuality( vertex->GetPchi2() );
     fDTEvent -> SetPsdPosition(0., 0., 0.);
-    fDTEvent -> SetPsdEnergy(event->GetTDCalEveto());
-    fDTEvent -> SetRPAngle ( event->GetEveto() );
-    fDTEvent -> SetImpactParameter ( event->GetCentrality () );
+    fDTEvent -> SetPsdEnergy(event -> GetTDCalEveto());
+    fDTEvent -> SetRPAngle ( event -> GetCentralityClass2 () );
+    fDTEvent -> SetImpactParameter ( event -> GetCentrality () );
 
 //      fTriggerMask =(event->GetTriggerMask()); // Trigger Mask
 //      fDate=(event->GetDate()); // Event date
@@ -203,15 +204,31 @@ void ReadEvent ()
 
     ring = (T49RingRoot *)event->GetRing();
 
+    int PSDModuleId;
+
     double ring_middle_radius[10]={30.5,36,42.5,50.2,59.4,70.3,83,98.1,116,137};
+
+//    for (unsigned int iRing=0; iRing<240; ++iRing)
+//    {
+//        fDTEvent -> AddPSDModule(0);
+////        fDTEvent -> GetLastPSDModule() -> SetPosition( cos( (iRing+0.5)*TMath::Pi()/12 ), sin( (iRing+0.5)*TMath::Pi()/12 ), 1800 );
+//        fDTEvent -> GetLastPSDModule() -> SetPosition(-ring_middle_radius[iRing%10]*sin(((iRing/10)+0.5)*TMath::Pi()/12),
+//                                                       ring_middle_radius[iRing%10]*cos(((iRing/10)+0.5)*TMath::Pi()/12), 1800);
+//        fDTEvent -> GetLastPSDModule() -> SetEnergy(ring->GetADChadron(iRing));
+//    }
 
     for (unsigned int iRing=0; iRing<240; ++iRing)
     {
         fDTEvent -> AddPSDModule(0);
-//        fDTEvent -> GetLastPSDModule() -> SetPosition( cos( (iRing+0.5)*TMath::Pi()/12 ), sin( (iRing+0.5)*TMath::Pi()/12 ), 1800 );
-        fDTEvent -> GetLastPSDModule() -> SetPosition(-ring_middle_radius[iRing%10]*sin(((iRing/10)+0.5)*TMath::Pi()/12),
-                                                       ring_middle_radius[iRing%10]*cos(((iRing/10)+0.5)*TMath::Pi()/12), 1800);
-        fDTEvent -> GetLastPSDModule() -> SetEnergy(ring->GetADChadron(iRing));
+    }
+
+    for (unsigned int iRing=0; iRing<240; ++iRing)
+    {
+        PSDModuleId = 4 + iRing / 10 + iRing % 10 * 24;
+        fDTEvent -> GetPSDModule (PSDModuleId) -> SetPosition (-ring_middle_radius [iRing%10] * sin (((iRing/10)+0.5) * TMath::Pi() / 12),
+                                                                ring_middle_radius [iRing%10] * cos (((iRing/10)+0.5) * TMath::Pi() / 12),
+                                                                1800);
+        fDTEvent -> GetPSDModule (PSDModuleId) -> SetEnergy (ring->GetADChadron (iRing));
     }
 
     particles = (TObjArray*)event -> GetPrimaryParticles();
@@ -219,40 +236,35 @@ void ReadEvent ()
 
     for (int iTrack=0; particle = (T49ParticleRoot*) particles_iter.Next(); iTrack++)
     {
-        fDTEvent -> AddTrack();
-        fDTEvent -> GetLastTrack() -> SetId(iTrack);
+        fDTEvent -> AddVertexTrack();
+        fDTEvent -> GetLastVertexTrack() -> SetId(iTrack);
         TrackPar.SetPtEtaPhiM (particle->GetPt(), particle->GetEta(), particle->GetPhi(), 0.14);
-        fDTEvent -> GetLastTrack() -> SetMomentum(TrackPar);
+        fDTEvent -> GetLastVertexTrack() -> SetMomentum(TrackPar);
 
-        fDTEvent -> GetLastTrack() -> SetDCA(particle->GetBx(), particle->GetBy(), 0);
-        fDTEvent -> GetLastTrack() -> SetChi2(particle->GetPchi2());
-        fDTEvent -> GetLastTrack() -> SetNDF(1);
-        fDTEvent -> GetLastTrack() -> SetCharge(particle->GetCharge());
+        fDTEvent -> GetLastVertexTrack() -> SetDCA(particle->GetBx(), particle->GetBy(), 0);
+        fDTEvent -> GetLastVertexTrack() -> SetChi2(particle->GetPchi2());
+        fDTEvent -> GetLastVertexTrack() -> SetNDF(1);
+        fDTEvent -> GetLastVertexTrack() -> SetCharge(particle->GetCharge());
 
-        fDTEvent -> GetLastTrack() -> SetNumberOfHits(particle->GetNPoint(0), EnumTPC::kVTPC1);
-        fDTEvent -> GetLastTrack() -> SetNumberOfHits(particle->GetNPoint(1), EnumTPC::kVTPC2);
-        fDTEvent -> GetLastTrack() -> SetNumberOfHits(particle->GetNPoint(2), EnumTPC::kMTPC);
-        fDTEvent -> GetLastTrack() -> SetNumberOfHits(particle->GetNPoint(), EnumTPC::kTPCAll);
+        fDTEvent -> GetLastVertexTrack() -> SetNumberOfHits(particle->GetNFitPoint(0), EnumTPC::kVTPC1);
+        fDTEvent -> GetLastVertexTrack() -> SetNumberOfHits(particle->GetNFitPoint(1), EnumTPC::kVTPC2);
+        fDTEvent -> GetLastVertexTrack() -> SetNumberOfHits(particle->GetNFitPoint(2), EnumTPC::kMTPC);
+        fDTEvent -> GetLastVertexTrack() -> SetNumberOfHits(particle->GetNFitPoint(), EnumTPC::kTPCAll);
 
-        fDTEvent -> GetLastTrack() -> SetNumberOfHitsPotential(particle->GetNMaxPoint(0), EnumTPC::kVTPC1);
-        fDTEvent -> GetLastTrack() -> SetNumberOfHitsPotential(particle->GetNMaxPoint(1), EnumTPC::kVTPC2);
-        fDTEvent -> GetLastTrack() -> SetNumberOfHitsPotential(particle->GetNMaxPoint(2), EnumTPC::kMTPC);
-        fDTEvent -> GetLastTrack() -> SetNumberOfHitsPotential(particle->GetNMaxPoint(), EnumTPC::kTPCAll);
+        fDTEvent -> GetLastVertexTrack() -> SetNumberOfHitsPotential(particle->GetNMaxPoint(0), EnumTPC::kVTPC1);
+        fDTEvent -> GetLastVertexTrack() -> SetNumberOfHitsPotential(particle->GetNMaxPoint(1), EnumTPC::kVTPC2);
+        fDTEvent -> GetLastVertexTrack() -> SetNumberOfHitsPotential(particle->GetNMaxPoint(2), EnumTPC::kMTPC);
+        fDTEvent -> GetLastVertexTrack() -> SetNumberOfHitsPotential(particle->GetNMaxPoint(), EnumTPC::kTPCAll);
 
-        fDTEvent -> GetLastTrack() -> SetNumberOfHitsFit(particle->GetNFitPoint(0), EnumTPC::kVTPC1);
-        fDTEvent -> GetLastTrack() -> SetNumberOfHitsFit(particle->GetNFitPoint(1), EnumTPC::kVTPC2);
-        fDTEvent -> GetLastTrack() -> SetNumberOfHitsFit(particle->GetNFitPoint(2), EnumTPC::kMTPC);
-        fDTEvent -> GetLastTrack() -> SetNumberOfHitsFit(particle->GetNFitPoint(), EnumTPC::kTPCAll);
+        fDTEvent -> GetLastVertexTrack() -> SetdEdx(particle->GetTmeanCharge(0), EnumTPC::kVTPC1);
+        fDTEvent -> GetLastVertexTrack() -> SetdEdx(particle->GetTmeanCharge(1), EnumTPC::kVTPC2);
+        fDTEvent -> GetLastVertexTrack() -> SetdEdx(particle->GetTmeanCharge(2), EnumTPC::kMTPC);
+        fDTEvent -> GetLastVertexTrack() -> SetdEdx(particle->GetTmeanCharge(), EnumTPC::kTPCAll);
 
-        fDTEvent -> GetLastTrack() -> SetdEdx(particle->GetTmeanCharge(0), EnumTPC::kVTPC1);
-        fDTEvent -> GetLastTrack() -> SetdEdx(particle->GetTmeanCharge(1), EnumTPC::kVTPC2);
-        fDTEvent -> GetLastTrack() -> SetdEdx(particle->GetTmeanCharge(2), EnumTPC::kMTPC);
-        fDTEvent -> GetLastTrack() -> SetdEdx(particle->GetTmeanCharge(), EnumTPC::kTPCAll);
-
-        fDTEvent -> GetLastTrack() -> SetNumberOfdEdxClusters(particle-> GetNDedxPoint(0), EnumTPC::kVTPC1);
-        fDTEvent -> GetLastTrack() -> SetNumberOfdEdxClusters(particle-> GetNDedxPoint(1), EnumTPC::kVTPC2);
-        fDTEvent -> GetLastTrack() -> SetNumberOfdEdxClusters(particle-> GetNDedxPoint(2), EnumTPC::kMTPC);
-        fDTEvent -> GetLastTrack() -> SetNumberOfdEdxClusters(particle-> GetNDedxPoint(), EnumTPC::kTPCAll);
+        fDTEvent -> GetLastVertexTrack() -> SetNumberOfdEdxClusters(particle-> GetNDedxPoint(0), EnumTPC::kVTPC1);
+        fDTEvent -> GetLastVertexTrack() -> SetNumberOfdEdxClusters(particle-> GetNDedxPoint(1), EnumTPC::kVTPC2);
+        fDTEvent -> GetLastVertexTrack() -> SetNumberOfdEdxClusters(particle-> GetNDedxPoint(2), EnumTPC::kMTPC);
+        fDTEvent -> GetLastVertexTrack() -> SetNumberOfdEdxClusters(particle-> GetNDedxPoint(), EnumTPC::kTPCAll);
 
         fDTEvent -> AddTOFHit();
         fDTEvent -> GetLastTOFHit() -> SetPathLength( particle->GetTofPathl() );
@@ -308,7 +320,7 @@ void ReadMCEvent ()
         TrackPar.SetXYZM (MCparticle -> GetPx(), MCparticle -> GetPy(), MCparticle -> GetPz(), MCparticle -> GetMass());
         fDTEvent -> GetLastMCTrack() -> SetMomentum(TrackPar);
         fDTEvent -> GetLastMCTrack() -> SetCharge(MCparticle->GetCharge());
-        fDTEvent -> GetLastMCTrack() -> SetPdgId(MCparticle -> GetPid());
+        fDTEvent -> GetLastMCTrack() -> SetPdgId(GEANT_to_PDG [MCparticle -> GetPid()]);
         fDTEvent -> GetLastMCTrack() -> SetNumberOfHits(MCparticle->GetNPoint(0), EnumTPC::kVTPC1);
         fDTEvent -> GetLastMCTrack() -> SetNumberOfHits(MCparticle->GetNPoint(1), EnumTPC::kVTPC2);
         fDTEvent -> GetLastMCTrack() -> SetNumberOfHits(MCparticle->GetNPoint(2), EnumTPC::kMTPC);
@@ -320,8 +332,8 @@ void ReadMCEvent ()
             priMatchedTrackIndex = MCparticle -> GetPriMatched (iMatch);
             nPriMatchPoints = MCparticle -> GetNPriMatchPoint (iMatch);
             nPoints = MCparticle -> GetNPoint ();
-            if ((double) nPriMatchPoints / nPoints > 0.3 );
-                fDTEvent -> GetLastMCTrack() -> AddRecoTrackId (priMatchedTrackIndex);
+//            if ((double) nPriMatchPoints / nPoints > 0.3 );
+//                fDTEvent -> GetLastMCTrack() -> AddTrackMatch (priMatchedTrackIndex, nPriMatchPoints, );
         }
     }
 }
