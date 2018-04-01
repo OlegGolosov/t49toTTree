@@ -24,7 +24,7 @@ include_directories(
     )
 add_definitions(${ROOT_CXX_FLAGS})
 
-add_executable(T49_to_DT productionMap.h particleCodes.h T49_to_DT.cxx)
+add_executable(T49_to_DT productionMap.h particleCodes.h main.cpp)
 target_link_libraries(T49_to_DT
     ${ROOT_LIBRARIES}
     ${DATATREE}/build/libDataTree.so
