@@ -27,11 +27,10 @@
 
 using namespace std;
 
-//string input_path = "/afs/cern.ch/work/o/ogolosov/public/NA49/DST";
-//string input_path = "/eos/user/o/ogolosov/NA49_data/DST";
-//string output_path = "/afs/cern.ch/work/o/ogolosov/public/NA49/DT";
-string input_path = "/home/ogolosov/Desktop/Analysis/NA49_data/DST";
-string output_path = "/home/ogolosov/Desktop/Analysis/NA49_data/DT";
+string input_path = "/eos/user/o/ogolosov/NA49_data/DST";
+string output_path = "/afs/cern.ch/work/o/ogolosov/public/NA49/DT";
+//string input_path = "/home/ogolosov/Desktop/Analysis/NA49_data/DST";
+//string output_path = "/home/ogolosov/Desktop/Analysis/NA49_data/DT";
 
 bool isSim = false;
 T49Run *run;
@@ -53,6 +52,35 @@ TObjArray *MCparticles;
 void ReadEvent ();
 void ReadMCEvent ();
 int T49_to_DT(string productionTag, int maxFileNumber = 10000);
+
+int main(int argc, char *argv[])
+{
+  TStopwatch timer;
+  timer.Reset();
+  timer.Start();
+
+//  argc = 2;
+//  argv [1] = "01D";
+
+  switch (argc)
+  {
+    case 2:
+    return T49_to_DT(argv[1]);
+    break;
+    case 3:
+    return T49_to_DT(argv[1], atoi(argv[2]));
+    break;
+    default:
+    cout << "Specify input filelist!" << endl;
+    cout<<argv[0]<<"  PRODUCTION_TAG  [N_FILES]"<<endl << endl;
+    return 0;
+  }
+
+  timer.Stop();
+  printf("Real time: %f\n",timer.RealTime());
+  printf("CPU time: %f\n",timer.CpuTime());
+  return 1;
+}
 
 int T49_to_DT(string productionTag, int maxFileNumber)
 {
@@ -146,35 +174,6 @@ int T49_to_DT(string productionTag, int maxFileNumber)
   return 1;
 }
 
-int main(int argc, char *argv[])
-{
-  TStopwatch timer;
-  timer.Reset();
-  timer.Start();
-
-//  argc = 2;
-//  argv [1] = "VENUS_40AGEV";
-
-  switch (argc)
-  {
-    case 2:
-    return T49_to_DT(argv[1]);
-    break;
-    case 3:
-    return T49_to_DT(argv[1], atoi(argv[2]));
-    break;
-    default:
-    cout << "Specify input filelist!" << endl;
-    cout<<argv[0]<<"  PRODUCTION_TAG  [N_FILES]"<<endl << endl;
-    return 0;
-  }
-
-  timer.Stop();
-  printf("Real time: %f\n",timer.RealTime());
-  printf("CPU time: %f\n",timer.CpuTime());
-  return 1;
-}
-
 void ReadEvent ()
 {
     event = (T49EventRoot*) run -> GetEvent ();
@@ -198,12 +197,14 @@ void ReadEvent ()
 //      fWfaBeamTime=(event->GetWfaBeamTime() ); // returns the array containing the times in nanoseconds for all beam particles in the ±25µs around the interaction time. The length of this array is given by the method above
 //      fWfaInterTime=(event->GetWfaInterTime()); //returns the array containing the times in nanoseconds for all interacting particles in the ±25µs around the interaction time. The length of this array is given by the method above
 
-
+    float vetoModuleAngle [4] = {1.25, 1.75, 0.25, 0.75};
     veto = (T49VetoRoot*)event->GetVeto();
     for (unsigned int iVeto=0; iVeto<4; ++iVeto)
     {
         fDTEvent -> AddPSDModule(0);
-        fDTEvent -> GetLastPSDModule() -> SetPosition( cos( (iVeto+0.5)*TMath::Pi()/2 ), sin( (iVeto+0.5)*TMath::Pi()/2 ), 2500 );
+        fDTEvent -> GetLastPSDModule() -> SetPosition(25. * cos(vetoModuleAngle [iVeto] * TMath::Pi()),
+                                                      25. * sin(vetoModuleAngle [iVeto] * TMath::Pi()),
+                                                      2500.);
         fDTEvent -> GetLastPSDModule() -> SetEnergy(veto->GetADChadron(iVeto));
     }
 
@@ -211,7 +212,7 @@ void ReadEvent ()
 
     int PSDModuleId;
 
-    double ring_middle_radius[10]={30.5,36,42.5,50.2,59.4,70.3,83,98.1,116,137};
+    float ring_middle_radius[10]={30.5,36,42.5,50.2,59.4,70.3,83,98.1,116,137};
 
 //    for (unsigned int iRing=0; iRing<240; ++iRing)
 //    {
@@ -311,6 +312,7 @@ void ReadMCEvent ()
     MCvertex = (T49VertexMCRoot*) (MCevent -> GetVertices () -> At (0));
     fDTEvent -> SetMCVertexPosition (MCvertex->GetX(), MCvertex->GetY(), MCvertex->GetZ());
     fDTEvent -> SetPsdEnergy(999);
+    fDTEvent -> SetRunId( run -> GetRunNumber () );
 
     MCparticles = (TObjArray*) MCevent -> GetMCParticles();
     TIter MCparticles_iter (MCparticles);
