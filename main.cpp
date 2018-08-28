@@ -28,7 +28,7 @@
 using namespace std;
 
 string input_path = "/eos/user/o/ogolosov/NA49_data/DST";
-string output_path = "/afs/cern.ch/work/o/ogolosov/public/NA49/DT";
+string output_path = "/afs/cern.ch/work/o/ogolosov/public/NA49/DT_tdcal";
 //string input_path = "/home/ogolosov/Desktop/Analysis/NA49_data/DST";
 //string output_path = "/home/ogolosov/Desktop/Analysis/NA49_data/DT";
 
@@ -146,7 +146,7 @@ int T49_to_DT(string productionTag, int maxFileNumber)
         cout << "Veto calibration for energies other than 40A and 160A GeV\n"; // set 1 for other energies?, 0 for no time-dependent calibration
         run->SetEvetoCal (1);
     }
-
+run->SetEvetoCal (1); // patch
     run -> SetRunType ((Char_t*) (runType.c_str ()));
     event = (T49EventRoot*) run -> GetNextEvent ();
     run -> SetRunNumber (event -> GetNRun ());
@@ -183,10 +183,12 @@ void ReadEvent ()
     fDTEvent -> SetVertexPosition(event->GetVertexX(), event->GetVertexY(), event->GetVertexZ(), EnumVertexType::kReconstructedVertex);
 
     vertex = ((T49VertexRoot*)event -> GetPrimaryVertex());
-    fDTEvent -> SetVertexQuality( vertex->GetPchi2() );
+		fDTEvent -> SetHasVertex ();
+    fDTEvent -> SetVertexQuality ( vertex->GetPchi2(), 0 );
+    fDTEvent -> SetVertexQuality ( vertex->GetIflag(), 1 );
     fDTEvent -> SetPsdPosition(0., 0., 0.);
     fDTEvent -> SetPsdEnergy(event -> GetTDCalEveto());
-    fDTEvent -> SetRPAngle ( event -> GetCentralityClass () );
+//    fDTEvent -> SetRPAngle ( event -> GetCentralityClass () );
     fDTEvent -> SetImpactParameter ( event -> GetCentrality () );
 
 //      fTriggerMask =(event->GetTriggerMask()); // Trigger Mask
@@ -311,7 +313,8 @@ void ReadMCEvent ()
     MCevent = (T49EventMCRoot*) run -> GetEvent ();
     MCvertex = (T49VertexMCRoot*) (MCevent -> GetVertices () -> At (0));
     fDTEvent -> SetMCVertexPosition (MCvertex->GetX(), MCvertex->GetY(), MCvertex->GetZ());
-    fDTEvent -> SetPsdEnergy(999);
+    fDTEvent -> SetPsdEnergy(event -> GetEveto());
+//    fDTEvent -> SetPsdEnergy(999);
     fDTEvent -> SetRunId( run -> GetRunNumber () );
 
     MCparticles = (TObjArray*) MCevent -> GetMCParticles();
