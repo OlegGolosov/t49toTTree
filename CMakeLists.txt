@@ -4,11 +4,11 @@ project(T49_TO_DT)
 
 set(CMAKE_BUILD_TYPE debug)
 
-#set(NA49 /afs/cern.ch/work/o/ogolosov/public/NA49/ROOT_NA49)
-#set(DATATREE /afs/cern.ch/work/o/ogolosov/public/DataTree)
+set(NA49 /afs/cern.ch/work/o/ogolosov/public/NA49/ROOT_NA49)
+set(DATATREE /afs/cern.ch/work/o/ogolosov/public/DataTree)
 
-set(NA49 /home/ogolosov/Desktop/Analysis/ROOT_NA49)
-set(DATATREE /home/ogolosov/Desktop/Analysis/DataTree)
+#set(NA49 /home/ogolosov/Desktop/Analysis/ROOT_NA49)
+#set(DATATREE /home/ogolosov/Desktop/Analysis/DataTree)
 
 list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
 
@@ -30,3 +30,4 @@ target_link_libraries(T49_to_DT
     ${DATATREE}/build/libDataTree.so
     ${NA49}/build/T49DST/libT49DST.so
     )
+target_compile_definitions(T49_to_DT PUBLIC "-DDATATREE_SHINE")

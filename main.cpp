@@ -27,11 +27,6 @@
 
 using namespace std;
 
-string input_path = "/eos/user/o/ogolosov/NA49_data/DST";
-string output_path = "/afs/cern.ch/work/o/ogolosov/public/NA49/DT_tdcal";
-//string input_path = "/home/ogolosov/Desktop/Analysis/NA49_data/DST";
-//string output_path = "/home/ogolosov/Desktop/Analysis/NA49_data/DT";
-
 bool isSim = false;
 T49Run *run;
 TTree *tree;
@@ -51,7 +46,7 @@ TObjArray *MCparticles;
 
 void ReadEvent ();
 void ReadMCEvent ();
-int T49_to_DT(string productionTag, int maxFileNumber = 10000);
+int T49_to_DT(string inputFileList, string outputPath = ".", int maxFileNumber = 10000);
 
 int main(int argc, char *argv[])
 {
@@ -59,16 +54,16 @@ int main(int argc, char *argv[])
   timer.Reset();
   timer.Start();
 
-//  argc = 2;
-//  argv [1] = "01D";
-
   switch (argc)
   {
     case 2:
     return T49_to_DT(argv[1]);
     break;
     case 3:
-    return T49_to_DT(argv[1], atoi(argv[2]));
+    return T49_to_DT(argv[1], argv[2]);
+    break;
+    case 4:
+    return T49_to_DT(argv[1], argv[2], atoi(argv[3]));
     break;
     default:
     cout << "Specify input filelist!" << endl;
@@ -82,8 +77,9 @@ int main(int argc, char *argv[])
   return 1;
 }
 
-int T49_to_DT(string productionTag, int maxFileNumber)
+int T49_to_DT(string inputFileList, string outputPath, int maxFileNumber)
 {
+  string productionTag=inputFileList.substr (inputFileList.rfind("/") + 1);
   if (prodMap.count(productionTag) == 0)
     {
     cout << "There is no such production tag as " << productionTag << endl;
@@ -91,16 +87,13 @@ int T49_to_DT(string productionTag, int maxFileNumber)
     }
 
   string runType = prodMap [productionTag];
-  input_path = input_path + "/" + productionTag;
-  output_path = output_path + "/" + runType;
-  string command = "mkdir -p " + output_path;
+  outputPath = outputPath + "/" + runType;
+  string command = "mkdir -p " + outputPath;
   gSystem -> Exec (command.c_str ());
-  cout << "input path: " << input_path << endl;
-  cout << "output path: " << output_path << endl;
+  cout << "inputFileList: " << inputFileList << endl;
+  cout << "outputPath: " << outputPath << endl;
 
   cout << runType << endl;
-
-  string inputFileList = input_path + "/list.txt";
 
   myTree = new TTree("DataTree", "NA49 Pb-Pb DataTree");
   fDTEvent = new DataTreeEvent();
@@ -116,9 +109,8 @@ int T49_to_DT(string productionTag, int maxFileNumber)
   string inputFileName;
   while (getline(inputFileListStream, inputFileName) && fileNumber < maxFileNumber)
   {
-  	string outputFileName = inputFileName.substr(1,inputFileName.size());
-  	outputFileName = output_path + "/DT" + outputFileName;
-  	inputFileName = input_path + "/" + inputFileName;
+    string outputFileName = inputFileName.substr(inputFileName.rfind("t49run" + 1));
+    outputFileName = outputPath + "/DT" + outputFileName;
 
     TFile* outputFile = new TFile((Char_t*) outputFileName.c_str(),"recreate");
     tree = myTree->CloneTree();
