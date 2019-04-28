@@ -46,7 +46,7 @@ TObjArray *MCparticles;
 
 void ReadEvent ();
 void ReadMCEvent ();
-int T49_to_DT(string inputFileList, string outputPath = ".", int maxFileNumber = 10000);
+int T49_to_DT(string inputFileList, string productionTag, string outputPath = ".", int maxFileNumber = 10000);
 
 int main(int argc, char *argv[])
 {
@@ -56,18 +56,18 @@ int main(int argc, char *argv[])
 
   switch (argc)
   {
-    case 2:
-    return T49_to_DT(argv[1]);
-    break;
     case 3:
     return T49_to_DT(argv[1], argv[2]);
     break;
     case 4:
-    return T49_to_DT(argv[1], argv[2], atoi(argv[3]));
+    return T49_to_DT(argv[1], argv[2], argv[3]);
+    break;
+    case 5:
+    return T49_to_DT(argv[1], argv[2], argv[3], atoi(argv[4]));
     break;
     default:
-    cout << "Specify input filelist!" << endl;
-    cout<<argv[0]<<"  PRODUCTION_TAG  [N_FILES]"<<endl << endl;
+    cout << "Specify input filelist and production tag!" << endl;
+    cout << argv[0] << " inputFileList productionTag [outputPath] [maxFileNumber]" << endl << endl;
     return 0;
   }
 
@@ -77,9 +77,8 @@ int main(int argc, char *argv[])
   return 1;
 }
 
-int T49_to_DT(string inputFileList, string outputPath, int maxFileNumber)
+int T49_to_DT(string inputFileList, string productionTag, string outputPath, int maxFileNumber)
 {
-  string productionTag=inputFileList.substr (inputFileList.rfind("/") + 1);
   if (prodMap.count(productionTag) == 0)
     {
     cout << "There is no such production tag as " << productionTag << endl;
