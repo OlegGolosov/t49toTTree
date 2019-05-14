@@ -196,6 +196,7 @@ void ReadEvent ()
 //      fWfaInterTime=(event->GetWfaInterTime()); //returns the array containing the times in nanoseconds for all interacting particles in the ±25µs around the interaction time. The length of this array is given by the method above
 
     float vetoModuleAngle [4] = {1.25, 1.75, 0.25, 0.75};
+    float psdModuleEnergy;
     veto = (T49VetoRoot*)event->GetVeto();
     for (unsigned int iVeto=0; iVeto<4; ++iVeto)
     {
@@ -203,7 +204,9 @@ void ReadEvent ()
         fDTEvent -> GetLastPSDModule() -> SetPosition(25. * cos(vetoModuleAngle [iVeto] * TMath::Pi()),
                                                       25. * sin(vetoModuleAngle [iVeto] * TMath::Pi()),
                                                       2000.);
-        fDTEvent -> GetLastPSDModule() -> SetEnergy(veto->GetADChadron(iVeto));
+        psdModuleEnergy = veto->GetADChadron(iVeto);
+        if (psdModuleEnergy < 0.) psdModuleEnergy = 0;
+        fDTEvent -> GetLastPSDModule() -> SetEnergy(psdModuleEnergy);
     }
 
     ring = (T49RingRoot *)event->GetRing();
@@ -231,8 +234,10 @@ void ReadEvent ()
         PSDModuleId = 4 + iRing / 10 + iRing % 10 * 24;
         fDTEvent -> GetPSDModule (PSDModuleId) -> SetPosition (-ring_middle_radius [iRing%10] * sin (((iRing/10)+0.5) * TMath::Pi() / 12.),
                                                                 ring_middle_radius [iRing%10] * cos (((iRing/10)+0.5) * TMath::Pi() / 12.),
-                                                                1800);
-        fDTEvent -> GetPSDModule (PSDModuleId) -> SetEnergy (ring->GetADChadron (iRing));
+                                                                1800);                                                              
+        psdModuleEnergy = ring->GetADChadron(iRing);
+        if (psdModuleEnergy < 0.) psdModuleEnergy = 0;
+        fDTEvent -> GetPSDModule (PSDModuleId) -> SetEnergy(psdModuleEnergy);
     }
 
     particles = (TObjArray*) event -> GetPrimaryParticles();
