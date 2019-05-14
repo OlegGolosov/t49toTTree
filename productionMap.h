@@ -25,6 +25,7 @@ std::map <std::string, std::string> prodMap = {
     //{"00Na", "std--160GeV-minbias-00N-b"},
     //{"00N", "std--160GeV-minbias-00N"},
     {"01J_2", "std+-160GeV-minbias-low-int-01J"},
+    {"01C", "std+-160GeV-minbias-proton-chain-01C"},
     {"00X", "std+-160GeV-SiSi-00X"},
     {"00Xdedx", "std+-160GeV-SiSi-00X-dedx"},
     {"VENUS_40AGEV", "VENUS_40AGEV"},

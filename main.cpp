@@ -182,7 +182,7 @@ void ReadEvent ()
       fDTEvent -> GetTrigger(0)->SetIsFired(1);
     else
       fDTEvent -> GetTrigger(0)->SetIsFired(0);
-    fDTEvent -> SetPsdPosition(0., 0., 0.);
+    fDTEvent -> SetPsdPosition(0., 0., 1800.);
     fDTEvent -> SetPsdEnergy(event -> GetTDCalEveto());
 //    fDTEvent -> SetRPAngle ( event -> GetCentralityClass () );
     fDTEvent -> SetImpactParameter ( event -> GetCentrality () );
@@ -202,7 +202,7 @@ void ReadEvent ()
         fDTEvent -> AddPSDModule(0);
         fDTEvent -> GetLastPSDModule() -> SetPosition(25. * cos(vetoModuleAngle [iVeto] * TMath::Pi()),
                                                       25. * sin(vetoModuleAngle [iVeto] * TMath::Pi()),
-                                                      2500.);
+                                                      2000.);
         fDTEvent -> GetLastPSDModule() -> SetEnergy(veto->GetADChadron(iVeto));
     }
 
@@ -229,8 +229,8 @@ void ReadEvent ()
     for (unsigned int iRing=0; iRing<240; ++iRing)
     {
         PSDModuleId = 4 + iRing / 10 + iRing % 10 * 24;
-        fDTEvent -> GetPSDModule (PSDModuleId) -> SetPosition (-ring_middle_radius [iRing%10] * sin (((iRing/10)+0.5) * TMath::Pi() / 12),
-                                                                ring_middle_radius [iRing%10] * cos (((iRing/10)+0.5) * TMath::Pi() / 12),
+        fDTEvent -> GetPSDModule (PSDModuleId) -> SetPosition (-ring_middle_radius [iRing%10] * sin (((iRing/10)+0.5) * TMath::Pi() / 12.),
+                                                                ring_middle_radius [iRing%10] * cos (((iRing/10)+0.5) * TMath::Pi() / 12.),
                                                                 1800);
         fDTEvent -> GetPSDModule (PSDModuleId) -> SetEnergy (ring->GetADChadron (iRing));
     }

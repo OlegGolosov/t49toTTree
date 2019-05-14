@@ -4,8 +4,9 @@ fileList=$1
 productionTag=$2
 nJobs=$3
 
-[ $# == 0 ] && echo "ERROR!!! NO FILELIST!!!" && exit
-[ $# == 1 ] && echo && nJobs=100
+[ $# == 0 ] && echo "ERROR!!! No filelist!!!" && exit
+[ $# == 1 ] && echo "ERROR!!! No Production tag!!!" && exit
+[ $# == 2 ] && echo "WARNING!!! No number of chunks - setting default: 100" && nJobs=100
 
 workDir=/afs/cern.ch/work/o/ogolosov/public/NA49/converterLogs/$(basename "$fileList")
 logDir=$workDir/log
@@ -26,7 +27,7 @@ rm -r $workDir/log/*
 
 split -n l/$nJobs -d -a 3 $fileList $workDir/fileLists/$(basename "$fileList")_
 
-cp -v condor_convert.sub_template condor_convert.sub
+rsync -v condor_convert.sub_template condor_convert.sub
 sed -i -- "s~WORKDIR~${workDir}~g" condor_convert.sub
 sed -i -- "s~OUTDIR~${outDir}~g" condor_convert.sub
 sed -i -- "s~PRODUCTIONTAG~${productionTag}~g" condor_convert.sub
