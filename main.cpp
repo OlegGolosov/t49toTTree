@@ -177,6 +177,11 @@ void ReadEvent ()
 		fDTEvent -> SetHasVertex ();
     fDTEvent -> SetVertexQuality ( vertex->GetPchi2(), 0 );
     fDTEvent -> SetVertexQuality ( vertex->GetIflag(), 1 );
+    fDTEvent -> AddTrigger();
+    if (vertex->GetIflag())
+      fDTEvent -> GetTrigger(0)->SetIsFired(1);
+    else
+      fDTEvent -> GetTrigger(0)->SetIsFired(0);
     fDTEvent -> SetPsdPosition(0., 0., 0.);
     fDTEvent -> SetPsdEnergy(event -> GetTDCalEveto());
 //    fDTEvent -> SetRPAngle ( event -> GetCentralityClass () );
