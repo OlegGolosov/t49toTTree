@@ -315,11 +315,12 @@ void ReadEvent ()
 
     psdNmod=0;
     float vetoModuleAngle [4] = {1.25, 1.75, 0.25, 0.75};
+    auto vetoModuleCenter=25*sqrt(2);
     auto veto = (T49VetoRoot*)event->GetVeto();
     for (unsigned int iVeto=0; iVeto<4; ++iVeto)
     {
-        psdModX[iVeto]=25.*cos(vetoModuleAngle[iVeto]*TMath::Pi());
-        psdModX[iVeto]=25.*sin(vetoModuleAngle[iVeto]*TMath::Pi());
+        psdModX[iVeto]=vetoModuleCenter*cos(vetoModuleAngle[iVeto]*TMath::Pi());
+        psdModY[iVeto]=vetoModuleCenter*sin(vetoModuleAngle[iVeto]*TMath::Pi());
         psdModZ[iVeto]=2600.;
         psdModE[iVeto]=veto->GetADChadron(iVeto); // +veto->GetADCphoton(iVeto);
         if(psdModE[iVeto]<0.)psdModE[iVeto]=0;
@@ -347,7 +348,7 @@ void ReadEvent ()
         psdModZ[modId]=1800;
         psdModE[modId]=ring->GetADChadron(iRing); //+ring->GetADCphoton(iRing);
         if(psdModE[modId]<0.)psdModE[modId] = 0;
-        psdModId[modId]=modId;
+        psdModId[modId]=modId+1;
         psdNmod++;
     }
 
