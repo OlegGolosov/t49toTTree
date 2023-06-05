@@ -74,10 +74,10 @@ int T49_to_DT(string inputFileList, string outputFileName, string productionTag)
     }
 
   string runType = prodMap [productionTag];
-  trigT4=true;
   if(runType.find("central")<runType.size())
-    trigT2=true;
-  else trigT2=false;
+    trigT4=false, trigT2=true;
+  else
+    trigT4=true, trigT2=false;
 
   cout << "inputFileList: " << inputFileList << endl;
   cout << "outputFileName: " << outputFileName << endl;
@@ -88,7 +88,7 @@ int T49_to_DT(string inputFileList, string outputFileName, string productionTag)
   run->SetVerbose(0);
 
   ifstream inputFileListStream (inputFileList);
-  if (!inputFileListStream) cout << "list.txt not found!\n";
+  if (!inputFileListStream) cout << inputFileList << " not found!\n";
 
   TFile* outputFile = new TFile((Char_t*) outputFileName.c_str(),"recreate");
   auto tree= new TTree("t","na49 data");

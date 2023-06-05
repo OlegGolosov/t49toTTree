@@ -1,30 +1,31 @@
 #!/bin/bash
 
-executable=$1
-fileList=$2
-productionTag=$3
-outDir=$4
+system=pbpb
+pbeam=40
+production=central_pos
+postfix=
+fileListDir=$PWD/filelists/${system}/${pbeam}agev/${production}
+export productionTag=${system}${pbeam}_${production}
+export treeDir=/mnt/pool/nica/7/ovgol/na61_data/${system}/${pbeam}agev/${production}/${postfix}
+logDir=/mnt/pool/nica/7/ovgol/log
 
-. /cvmfs/sft.cern.ch/lcg/app/releases/ROOT/6.16.00/x86_64-centos7-gcc48-opt/bin/thisroot.sh
-. /afs/cern.ch/work/o/ogolosov/public/NA49/ROOT_NA49/set49_local.sh
+export rootConfig=/mnt/pool/nica/7/parfenovpeter/Soft/root-6-26/install/bin/thisroot.sh
+convExe=/mnt/pool/nica/5/ovgol/soft/t49toTTree/build/t49toTTree
+executable=./runConverter.sh
 
-filePath=`cat ${fileList}`
-for file in ${filePath}
-do
-  echo "xrdcp root://castorpublic.cern.ch/${file} ${outDir}/DST/${productionTag}/"
-  xrdcp root://castorpublic.cern.ch/${file} ${outDir}/DST/${productionTag}/
-done
+mkdir -pv $logDir
 
-sed -i -- "s~/castor/cern.ch/na49/mini-dst~${outDir}/DST~g" $fileList 
+mkdir -pv $treeDir/src
+cp -v $0 $treeDir/src
+cp -v $executable $treeDir/src
+cp -v $convExe $treeDir/src
+executable=$treeDir/src/$(basename $executable)
 
-echo "Running ${executable} ${fileList} ${productionTag} ${outDir}/DT"
+export fileList=${treeDir}/src/list
+ls $fileListDir/* > $fileList 
+nFiles=$(cat $fileList|wc -w)
 
-${executable} ${fileList} ${productionTag} ${outDir}/DT
+sbatch -p fast -a 1-$nFiles -o ${logDir}/conv_%A_%a.out $executable
 
-filePath=`cat ${fileList}`
-for file in $filePath
-do
-  rm -v $file 
-done
-
-echo Done!
+#export SLURM_ARRAY_TASK_ID=1
+#$executable
