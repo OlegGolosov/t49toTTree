@@ -10,6 +10,7 @@ export treeDir=/mnt/pool/nica/7/ovgol/na61_data/${system}/${pbeam}agev/${product
 logDir=/mnt/pool/nica/7/ovgol/log
 
 export rootConfig=/mnt/pool/nica/7/parfenovpeter/Soft/root-6-26/install/bin/thisroot.sh
+export na49rootConfig=/mnt/pool/nica/5/ovgol/soft/ROOT_NA49/set49_local.sh
 convExe=/mnt/pool/nica/5/ovgol/soft/t49toTTree/build/t49toTTree
 executable=./runConverter.sh
 

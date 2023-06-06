@@ -2,6 +2,7 @@
 
 date
 source ${rootConfig}
+source ${na49rootConfig}
 
 jobId=$SLURM_ARRAY_TASK_ID
 list=$(sed "${jobId}q;d" $fileList)
